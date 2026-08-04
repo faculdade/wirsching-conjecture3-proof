@@ -1,0 +1,121 @@
+"""Independent audit of the explicit constant chain in Theorem 3 (Formula (A)),
+proof in Section 4 of papers/01-wirsching-conjecture3/main.tex (mirroring
+notes/H-006-formula-A-proof-2.md in the main project repository).
+
+This script evaluates the analytic upper-bound expressions from the proof at
+high precision and checks the numeric inequalities the proof states, exactly
+as the proof states them (it is diagnostic, not a source of any inequality:
+the written proof supplies the bounds, this script confirms the arithmetic).
+It also directly evaluates kappa_2, kappa_3 (Lemma 1) against numerical
+differentiation of the defining function, at real and complex arguments, and
+evaluates the assembled error bound E(N) at a range of N to confirm it is
+strictly decreasing, below 1 at N=17, and O(N^{-1/2}) with the stated limit.
+"""
+
+import mpmath as mp
+
+mp.mp.dps = 60
+
+
+def ell(z):
+    """g(z) = log((1-e^-z)/z), the log-density kernel."""
+    return mp.log((1 - mp.exp(-z)) / z)
+
+
+def kappa_direct(n, z):
+    """kappa_n(z) = (-1)^n z^n g^{(n)}(z), by direct numerical differentiation."""
+    return (-1) ** n * z ** n * mp.diff(ell, z, n)
+
+
+def kappa_closed(z):
+    """Closed forms for kappa_2, kappa_3 (Section 4 of the paper)."""
+    x = z / 2
+    return (
+        1 - x ** 2 / mp.sinh(x) ** 2,
+        2 - 2 * x ** 3 * mp.cosh(x) / mp.sinh(x) ** 3,
+    )
+
+
+def e_func(r):
+    return r ** 2 / mp.sinh(r) ** 2
+
+
+def f_func(r):
+    return r ** 3 * mp.cosh(r) / mp.sinh(r) ** 3
+
+
+def E_bound(N, alpha=mp.mpf(1) / 3):
+    """The explicit bound E(N) assembled in the proof of Theorem 3."""
+    A = mp.mpf("1.4269413069")
+    Vlo = N - A
+    Vup = N + mp.mpf("0.1283")
+    B = (2 * N + mp.mpf("3.7442")) / 6
+    aN = mp.power(N, -alpha)
+    eps = B * aN ** 3
+    e1 = 4 * mp.e ** eps * B / (mp.sqrt(2 * mp.pi) * Vup ** mp.mpf("1.5"))
+    cc = aN * mp.sqrt(Vlo)
+    e2 = (2 / mp.sqrt(2 * mp.pi)) * mp.e ** (-cc ** 2 / 2) / cc
+    e3 = (
+        2 * mp.mpf("3.0152") * mp.sqrt(Vup / (2 * mp.pi))
+        * (1 + aN ** 2) ** (-(N - 2) / mp.mpf(2)) / (aN * (N - 2))
+    )
+    return e1 + e2 + e3
+
+
+def main():
+    print("Lemma 1: sector bounds M_2 <= 3, M_3 <= 7.657 (sup over |Im w| <= Re w)")
+    M2, M3 = mp.mpf(0), mp.mpf(0)
+    for b in [mp.mpf("0.1"), mp.mpf(1), mp.mpf(3), mp.mpf("4.076"), mp.mpf(10), mp.mpf(30)]:
+        for u in [mp.mpf(0), mp.mpf("0.5"), mp.mpf(1)]:
+            z = b * (1 + 1j * u)
+            k2c, k3c = kappa_closed(z)
+            k2d, k3d = kappa_direct(2, z), kappa_direct(3, z)
+            assert abs(k2c - k2d) < mp.mpf("1e-40"), (b, u, "kappa_2 mismatch")
+            assert abs(k3c - k3d) < mp.mpf("1e-40"), (b, u, "kappa_3 mismatch")
+            M2, M3 = max(M2, abs(k2c)), max(M3, abs(k3c))
+    print(f"  closed-form kappa_2, kappa_3 match numerical differentiation to 1e-40")
+    print(f"  sampled sup |kappa_2| = {mp.nstr(M2, 8)} (bound 3)")
+    print(f"  sampled sup |kappa_3| = {mp.nstr(M3, 8)} (bound 7.657)")
+    assert M2 <= 3 and M3 <= mp.mpf("7.657")
+
+    print("\nLemma 1': local bound at |w|<=2: |kappa_2|<=0.114|w|^2, |kappa_3|<=0.0119|w|^4")
+    for b in [mp.mpf("0.01"), mp.mpf("0.5"), mp.mpf(2)]:
+        z = b * (1 + 1j * mp.mpf("0.9"))
+        if abs(z) > 2:
+            continue
+        k2c, k3c = kappa_closed(z)
+        assert abs(k2c) <= mp.mpf("0.114") * abs(z) ** 2
+        assert abs(k3c) <= mp.mpf("0.0119") * abs(z) ** 4
+    print("  holds at sampled points")
+
+    print("\nLemma 2: variance constant A = sum_{m>=0} e(3^m/2)")
+    A = mp.nsum(lambda m: e_func(mp.mpf(3) ** m / 2), [0, mp.inf])
+    print(f"  A = {mp.nstr(A, 15)}  (stated: 1.4269413069)")
+    assert abs(A - mp.mpf("1.4269413069")) < mp.mpf("1e-9")
+
+    print("\nLemma 4: tail constant F = sum_{m>=0} f(3^m/2)")
+    F = mp.nsum(lambda m: f_func(mp.mpf(3) ** m / 2), [0, mp.inf])
+    print(f"  F = {mp.nstr(F, 15)}  (stated: 1.8635631489)")
+    assert abs(F - mp.mpf("1.8635631489")) < mp.mpf("1e-9")
+
+    print("\nE(N): the assembled error bound, Theorem 3")
+    print(f"{'N':>8}{'E(N)':>16}{'sqrt(N)*E(N)':>16}")
+    prev = None
+    for N in [17, 20, 30, 50, 100, 1000, 10 ** 4, 10 ** 6]:
+        e = E_bound(mp.mpf(N))
+        print(f"{N:>8}{mp.nstr(e, 10):>16}{mp.nstr(mp.sqrt(N) * e, 10):>16}")
+        if prev is not None:
+            assert e < prev, f"E(N) not decreasing at N={N}"
+        prev = e
+    e17 = E_bound(mp.mpf(17))
+    assert e17 < 1, "E(17) should be < 1"
+    limit = mp.sqrt(mp.mpf(10) ** 8) * E_bound(mp.mpf(10) ** 8)
+    print(f"\nE(17) = {mp.nstr(e17, 6)} < 1: confirmed")
+    print(f"sqrt(N)*E(N) at N=10^8: {mp.nstr(limit, 8)}  (claimed limit: 0.742358)")
+    assert abs(limit - mp.mpf("0.742358")) < mp.mpf("0.01")
+
+    print("\nAll checks passed.")
+
+
+if __name__ == "__main__":
+    main()
