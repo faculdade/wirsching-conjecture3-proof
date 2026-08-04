@@ -2,7 +2,8 @@
 
 Numerical evidence for **Theorem 1** (Conjecture 3). Computes `phi(z_l)/phi_0(z_l)` for
 `z_l = l * 3^{-l}`, `l = 5..50`, using a self-contained real-variable saddlepoint evaluator for
-`phi` (justified rigorously by Theorem 3) and the Berg-Kruppel exponents derived in Section 6.
+`phi` (justified rigorously by Theorem 13, "Formula (A)") and the Berg-Kruppel exponents derived
+in Section 6.
 
 **Run:** `python3 conjecture3_numerical_sweep.py`
 

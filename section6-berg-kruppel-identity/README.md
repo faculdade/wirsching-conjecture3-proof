@@ -1,6 +1,6 @@
 ## `derive_P_bergkruppel_identity.py`
 
-Verifies **Proposition 9** and the closed-form constant `C_P` behind **Corollary 2**: evaluates the
+Verifies **Theorem 17** and the closed-form constant `C_P` behind **Corollary 3**: evaluates the
 exact smooth-saddle expression `P(tau)` and compares it against `log(phi_0,bare(e^{-tau}))` at
 increasing `tau`, confirming the difference converges to the stated closed form `C_P`, and that
 `P(tau) - log(phi_0,BK(e^{-tau}))` (the literal Berg-Kruppel-normalized comparison) converges to
