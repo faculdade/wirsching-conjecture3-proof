@@ -1,15 +1,16 @@
-"""Independent audit of the explicit constant chain in Theorem 3 (Formula (A)),
-proof in Section 4 of papers/01-wirsching-conjecture3/main.tex (mirroring
+"""Independent audit of the explicit constant chain in Theorem 13 (uniform
+saddlepoint asymptotic), proof in Section 4 of
+papers/01-wirsching-conjecture3/main.tex (mirroring
 notes/H-006-formula-A-proof-2.md in the main project repository).
 
 This script evaluates the analytic upper-bound expressions from the proof at
 high precision and checks the numeric inequalities the proof states, exactly
 as the proof states them (it is diagnostic, not a source of any inequality:
 the written proof supplies the bounds, this script confirms the arithmetic).
-It also directly evaluates kappa_2, kappa_3 (Lemma 1) against numerical
+It also directly evaluates kappa_2, kappa_3 (Lemma 9) against numerical
 differentiation of the defining function, at real and complex arguments, and
 evaluates the assembled error bound E(N) at a range of N to confirm it is
-strictly decreasing, below 1 at N=17, and O(N^{-1/2}) with the stated limit.
+strictly decreasing, below 1 at N=19, and O(N^{-1/2}) with the stated limit.
 """
 
 import mpmath as mp
@@ -45,14 +46,14 @@ def f_func(r):
 
 
 def E_bound(N, alpha=mp.mpf(1) / 3):
-    """The explicit bound E(N) assembled in the proof of Theorem 3."""
+    """The explicit bound E(N) assembled in the proof of Theorem 13."""
     A = mp.mpf("1.4269413069")
     Vlo = N - A
     Vup = N + mp.mpf("0.1283")
-    B = (2 * N + mp.mpf("3.7442")) / 6
+    B = (2 * N + mp.mpf("10.559")) / 6
     aN = mp.power(N, -alpha)
     eps = B * aN ** 3
-    e1 = 4 * mp.e ** eps * B / (mp.sqrt(2 * mp.pi) * Vup ** mp.mpf("1.5"))
+    e1 = 4 * mp.e ** eps * B / (mp.sqrt(2 * mp.pi) * Vlo ** mp.mpf("1.5"))
     cc = aN * mp.sqrt(Vlo)
     e2 = (2 / mp.sqrt(2 * mp.pi)) * mp.e ** (-cc ** 2 / 2) / cc
     e3 = (
@@ -98,19 +99,21 @@ def main():
     print(f"  F = {mp.nstr(F, 15)}  (stated: 1.8635631489)")
     assert abs(F - mp.mpf("1.8635631489")) < mp.mpf("1e-9")
 
-    print("\nE(N): the assembled error bound, Theorem 3")
+    print("\nE(N): the assembled error bound, Theorem 13")
     print(f"{'N':>8}{'E(N)':>16}{'sqrt(N)*E(N)':>16}")
     prev = None
-    for N in [17, 20, 30, 50, 100, 1000, 10 ** 4, 10 ** 6]:
+    for N in [19, 20, 30, 50, 100, 1000, 10 ** 4, 10 ** 6]:
         e = E_bound(mp.mpf(N))
         print(f"{N:>8}{mp.nstr(e, 10):>16}{mp.nstr(mp.sqrt(N) * e, 10):>16}")
         if prev is not None:
             assert e < prev, f"E(N) not decreasing at N={N}"
         prev = e
-    e17 = E_bound(mp.mpf(17))
-    assert e17 < 1, "E(17) should be < 1"
+    e18 = E_bound(mp.mpf(18))
+    e19 = E_bound(mp.mpf(19))
+    assert e18 > 1, "E(18) should be > 1 (N_0=19 is sharp)"
+    assert e19 < 1, "E(19) should be < 1"
     limit = mp.sqrt(mp.mpf(10) ** 8) * E_bound(mp.mpf(10) ** 8)
-    print(f"\nE(17) = {mp.nstr(e17, 6)} < 1: confirmed")
+    print(f"\nE(18) = {mp.nstr(e18, 6)} > 1, E(19) = {mp.nstr(e19, 6)} < 1: confirmed, N_0=19")
     print(f"sqrt(N)*E(N) at N=10^8: {mp.nstr(limit, 8)}  (claimed limit: 0.742358)")
     assert abs(limit - mp.mpf("0.742358")) < mp.mpf("0.01")
 
