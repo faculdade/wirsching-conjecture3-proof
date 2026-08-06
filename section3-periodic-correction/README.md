@@ -7,7 +7,9 @@ enclosures, not numerical estimates.
 
 **Run:** `python3 certify_H_nonconstancy.py`
 
-**Expect:** a certified enclosure `-0.000377190280943987 < H(0)-H(log(3/2)) < -0.000377190280943985`;
+**Expect:** first, the four raw Fourier coefficients `Hhat(1)`..`Hhat(4)` as ball enclosures (these
+are the same four values printed inline, to fewer digits, in Proposition 8's proof in the paper);
+then a certified enclosure `-0.000377190280943987 < H(0)-H(log(3/2)) < -0.000377190280943985`;
 then certified bounds `sup|H'| <= 0.0011977472315550332` and `sup|H''| <= 0.0068518962896650951`
 (equation (3) of the paper), matched to the quoted values; then, on a grid of `N=2^20` points
 combined with the certified Lipschitz bound, the same tight enclosure Proposition 8 states,

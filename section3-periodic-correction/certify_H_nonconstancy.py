@@ -62,7 +62,13 @@ def main():
 
     M = 4
     finite = arb(0)
-    print("Certified finite contribution to D = H(0)-H(log(3/2))")
+    print("Raw Fourier coefficients Hhat(m), m=1..4 (as printed inline in the paper's")
+    print("Proposition 8, at 100-decimal working precision here vs. 250-bit there):")
+    for m in range(1, M + 1):
+        coeff = hhat(m, c, alpha)
+        print(f"  Hhat({m}) = {coeff}")
+
+    print("\nCertified finite contribution to D = H(0)-H(log(3/2))")
     for m in range(1, M + 1):
         omega = arb(m) * alpha
         coeff = hhat(m, c, alpha)
